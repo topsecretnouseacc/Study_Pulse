@@ -14,7 +14,7 @@ The app helps students track solved questions, correct and wrong answers, daily 
 - Study log creation backed by Supabase `study_logs`
 - Profile-based daily question goal
 - Streak and gem balance updates when the daily goal is completed
-- Mock exam tracking prototype
+- Mock exam tracking backed by Supabase
 - Analytics prototype for topic accuracy and weak topics
 - AI Solver placeholder for future image-based question solving
 
@@ -121,7 +121,6 @@ Implemented:
 
 Still planned:
 
-- Persist mock exam results in Supabase
 - Add chart components for stronger analytics
 - Add secure AI question solving through backend or Supabase Edge Functions
 - Improve calendar with real historical data

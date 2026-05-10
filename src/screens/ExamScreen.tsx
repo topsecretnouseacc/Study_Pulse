@@ -12,6 +12,7 @@ export function ExamScreen(props: {
   setAytNet: (value: string) => void;
   addMockExam: () => void;
   mockExams: MockExam[];
+  syncMessage: string;
 }) {
   return (
     <View style={styles.screen}>
@@ -23,6 +24,8 @@ export function ExamScreen(props: {
           <Input label="AYT net" value={props.aytNet} onChangeText={props.setAytNet} keyboardType="decimal-pad" />
         </View>
       </FormCard>
+
+      {props.syncMessage ? <Text style={styles.syncMessage}>{props.syncMessage}</Text> : null}
 
       <Text style={styles.sectionTitleLarge}>Exam History</Text>
       {props.mockExams.map((exam) => (

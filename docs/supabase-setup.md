@@ -26,9 +26,10 @@ If email confirmation is enabled in Supabase, newly registered users may need to
 - Subjects and topics are loaded from Supabase.
 - New study logs are inserted into `study_logs`.
 - Study logs are read back with subject and topic names.
+- Mock exam results are inserted into and loaded from `mock_exams`.
 - Profiles store daily question goal, streak count, gem balance, and the last date the daily goal was completed.
 - When the daily question goal is reached for the first time in a day, streak and gem balance are updated.
-- Mock exams and AI questions are still local/prototype flows for now.
+- AI questions are still a local/prototype flow for now.
 
 ## Migrations After Initial Schema
 

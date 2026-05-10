@@ -11,7 +11,7 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
 import { styles } from './src/styles';
-import type { Department, StudyLog, Subject, TabKey, UserProfile } from './src/types';
+import type { Department, MockExam, StudyLog, Subject, TabKey, UserProfile } from './src/types';
 import { createStudyStats } from './src/utils/study';
 
 export default function App() {
@@ -23,10 +23,11 @@ export default function App() {
   const [department, setDepartment] = useState<Department>('Sayısal');
   const [subjects, setSubjects] = useState<Subject[]>(subjectCatalog);
   const [studyLogs, setStudyLogs] = useState<StudyLog[]>(initialStudyLogs);
-  const [mockExams, setMockExams] = useState(initialMockExams);
+  const [mockExams, setMockExams] = useState<MockExam[]>(initialMockExams);
   const [subjectId, setSubjectId] = useState(subjectCatalog[0].id);
   const [topicId, setTopicId] = useState(subjectCatalog[0].topics[0].id);
   const [studySyncMessage, setStudySyncMessage] = useState('');
+  const [examSyncMessage, setExamSyncMessage] = useState('');
   const [solved, setSolved] = useState('30');
   const [correct, setCorrect] = useState('22');
   const [examName, setExamName] = useState('TYT Genel Deneme');
@@ -102,6 +103,7 @@ export default function App() {
 
     loadSubjects();
     loadStudyLogs();
+    loadMockExams();
   }, [profile]);
 
   async function loadSubjects() {
@@ -154,6 +156,26 @@ export default function App() {
     setStudyLogs(data.map(mapStudyLogRow));
   }
 
+  async function loadMockExams() {
+    const { data, error } = await supabase
+      .from('mock_exams')
+      .select('id, name, exam_date, tyt_net, ayt_net')
+      .order('exam_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      setExamSyncMessage(error?.message ?? 'Deneme kayıtları yüklenemedi.');
+      return;
+    }
+
+    if (data.length === 0) {
+      setMockExams([]);
+      return;
+    }
+
+    setMockExams(data.map(mapMockExamRow));
+  }
+
   function selectSubject(nextSubjectId: number) {
     const nextSubject = subjects.find((item) => item.id === nextSubjectId);
     if (!nextSubject) return;
@@ -203,19 +225,37 @@ export default function App() {
     setStudySyncMessage('Çalışma kaydı Supabase’e eklendi.');
   }
 
-  function addMockExam() {
+  async function addMockExam() {
     if (!examName.trim()) return;
 
-    setMockExams((current) => [
-      {
-        id: Date.now(),
+    setExamSyncMessage('');
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      setExamSyncMessage('Deneme eklemek için giriş yapmalısın.');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('mock_exams')
+      .insert({
+        user_id: userData.user.id,
         name: examName.trim(),
-        tytNet: Number(tytNet) || 0,
-        aytNet: Number(aytNet) || 0,
-        date: 'Bugün',
-      },
+        tyt_net: Number(tytNet) || 0,
+        ayt_net: Number(aytNet) || 0,
+      })
+      .select('id, name, exam_date, tyt_net, ayt_net')
+      .single();
+
+    if (error || !data) {
+      setExamSyncMessage(error?.message ?? 'Deneme kaydı eklenemedi.');
+      return;
+    }
+
+    setMockExams((current) => [
+      mapMockExamRow(data),
       ...current,
     ]);
+    setExamSyncMessage('Deneme sonucu Supabase’e eklendi.');
   }
 
   function openStudyForSubject(nextSubjectId: number) {
@@ -339,6 +379,7 @@ export default function App() {
               setAytNet={setAytNet}
               addMockExam={addMockExam}
               mockExams={mockExams}
+              syncMessage={examSyncMessage}
             />
           )}
           {activeTab === 'analytics' && <AnalyticsScreen stats={stats} studyLogs={studyLogs} />}
@@ -462,6 +503,22 @@ function mapStudyLogRow(row: {
     correct: row.correct_count,
     wrong: row.wrong_count,
     date: isToday(row.studied_at) ? 'Bugün' : row.studied_at,
+  };
+}
+
+function mapMockExamRow(row: {
+  id: number;
+  name: string;
+  exam_date: string;
+  tyt_net: number | string;
+  ayt_net: number | string;
+}): MockExam {
+  return {
+    id: row.id,
+    name: row.name,
+    tytNet: Number(row.tyt_net) || 0,
+    aytNet: Number(row.ayt_net) || 0,
+    date: isToday(row.exam_date) ? 'Bugün' : row.exam_date,
   };
 }
 
