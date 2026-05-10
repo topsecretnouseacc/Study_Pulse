@@ -126,12 +126,28 @@ export function SummaryMetric({ value, label }: { value: string; label: string }
 }
 
 export function GoalRing({ progress, remaining }: { progress: number; remaining: number }) {
-  const fillDegrees = Math.round(270 * progress);
+  const clampedProgress = Math.max(0, Math.min(progress, 1));
+  const segmentCount = 40;
+  const activeSegments = Math.round(segmentCount * clampedProgress);
 
   return (
     <View style={styles.ringWrap}>
       <View style={styles.ringTrack}>
-        <View style={[styles.ringFill, { transform: [{ rotate: `${-135 + fillDegrees}deg` }] }]} />
+        {Array.from({ length: segmentCount }, (_, index) => {
+          const angle = (360 / segmentCount) * index;
+          const isActive = index < activeSegments;
+
+          return (
+            <View
+              key={index}
+              style={[
+                styles.ringSegment,
+                isActive && styles.ringSegmentActive,
+                { transform: [{ rotate: `${angle}deg` }, { translateY: -62 }] },
+              ]}
+            />
+          );
+        })}
         <View style={styles.ringCenter}>
           <Text style={styles.remainingValue}>{remaining}</Text>
           <Text style={styles.remainingLabel}>Remaining</Text>
