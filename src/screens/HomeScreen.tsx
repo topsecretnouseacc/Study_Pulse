@@ -1,13 +1,14 @@
 import { Text, TouchableOpacity, View } from 'react-native';
-import { GoalRing, MiniDetail, Pill, StudyBlock, StudyCalendar, SubjectBar, SummaryMetric } from '../components/ui';
-import type { CalendarDay, Department, StudyLog, UserProfile } from '../types';
+import { GoalRing, MiniDetail, Pill, SuggestedStudyBlock, StudyBlock, StudyCalendar, SubjectBar, SummaryMetric } from '../components/ui';
+import type { CalendarDay, Department, StudyLog, Subject, UserProfile } from '../types';
 import type { StudyStats } from '../utils/study';
-import { getSubjectShortLabel } from '../utils/study';
+import { getRecommendedSubjectNames, getSubjectShortLabel } from '../utils/study';
 import { styles } from '../styles';
 
 export function HomeScreen({
   stats,
   studyLogs,
+  subjects,
   calendarDays,
   detailMode,
   showCalendar,
@@ -21,6 +22,7 @@ export function HomeScreen({
 }: {
   stats: StudyStats;
   studyLogs: StudyLog[];
+  subjects: Subject[];
   calendarDays: CalendarDay[];
   detailMode: boolean;
   showCalendar: boolean;
@@ -32,7 +34,12 @@ export function HomeScreen({
   onOpenStudy: () => void;
   onOpenSubject: (subjectId: number) => void;
 }) {
-  const todayLogs = studyLogs.filter((log) => log.date === 'Bugün');
+  const todayLogs = studyLogs.filter((log) => log.date === 'Bugün' || log.date === 'BugÃ¼n');
+  const suggestedSubjects = getRecommendedSubjectNames(department)
+    .map((name) => subjects.find((subject) => subject.name === name))
+    .filter((subject): subject is Subject => Boolean(subject))
+    .filter((subject) => !todayLogs.some((log) => log.subjectId === subject.id))
+    .slice(0, 4);
 
   return (
     <View style={styles.screen}>
@@ -86,7 +93,7 @@ export function HomeScreen({
             {stats.departmentPlan.primarySubjectIds.map((subjectId) => (
               <SubjectBar
                 key={subjectId}
-                label={getSubjectShortLabel(subjectId)}
+                label={getSubjectShortLabel(subjectId, subjects)}
                 value={stats.subjectProgress[subjectId] ?? 0}
                 target={stats.departmentPlan.targets[subjectId]}
               />
@@ -106,6 +113,16 @@ export function HomeScreen({
         {todayLogs.map((log) => (
           <StudyBlock key={log.id} log={log} onAdd={() => onOpenSubject(log.subjectId)} />
         ))}
+        {todayLogs.length === 0 &&
+          suggestedSubjects.map((subject) => (
+            <SuggestedStudyBlock
+              key={subject.id}
+              subject={subject.name}
+              topic={subject.topics[0]?.name ?? 'Konu seç'}
+              target={stats.departmentPlan.targets[subject.id] ?? 35}
+              onAdd={() => onOpenSubject(subject.id)}
+            />
+          ))}
       </View>
     </View>
   );

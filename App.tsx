@@ -45,8 +45,9 @@ export default function App() {
         profile?.dailyQuestionGoal ?? 180,
         profile?.streakCount ?? 0,
         profile?.gemBalance ?? 0,
+        subjects,
       ),
-    [department, mockExams, profile?.dailyQuestionGoal, profile?.gemBalance, profile?.streakCount, studyLogs],
+    [department, mockExams, profile?.dailyQuestionGoal, profile?.gemBalance, profile?.streakCount, studyLogs, subjects],
   );
 
   const selectedSubject = subjects.find((item) => item.id === subjectId);
@@ -386,6 +387,7 @@ export default function App() {
             <HomeScreen
               stats={stats}
               studyLogs={studyLogs}
+              subjects={subjects}
               calendarDays={calendarDays}
               detailMode={detailMode}
               showCalendar={showCalendar}

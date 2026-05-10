@@ -184,6 +184,39 @@ export function StudyBlock({ log, onAdd }: { log: StudyLog; onAdd: () => void })
   );
 }
 
+export function SuggestedStudyBlock({
+  subject,
+  topic,
+  target,
+  onAdd,
+}: {
+  subject: string;
+  topic: string;
+  target: number;
+  onAdd: () => void;
+}) {
+  return (
+    <View style={styles.studyBlock}>
+      <View style={styles.blockRingMuted}>
+        <Text style={styles.blockIcon}>{getSubjectIcon(subject)}</Text>
+      </View>
+      <View style={styles.studyBlockBody}>
+        <Text style={styles.blockTitle}>{subject}</Text>
+        <Text style={styles.blockMeta}>{target} soru hedef</Text>
+        <View style={styles.aiTagRow}>
+          <Text style={styles.planTag}>Plan</Text>
+          <Text numberOfLines={1} style={styles.blockTopic}>
+            {topic}
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity accessibilityRole="button" onPress={onAdd} style={styles.addCircle}>
+        <Text style={styles.addCircleText}>+</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export function MiniDetail({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.miniDetail}>
