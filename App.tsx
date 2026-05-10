@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { subjectCatalog, tabs } from './src/data/catalog';
+import { tabs } from './src/data/catalog';
 import { supabase } from './src/lib/supabase';
 import { AiScreen } from './src/screens/AiScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
@@ -22,11 +22,11 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [department, setDepartment] = useState<Department>('Sayısal');
-  const [subjects, setSubjects] = useState<Subject[]>(subjectCatalog);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [studyLogs, setStudyLogs] = useState<StudyLog[]>([]);
   const [mockExams, setMockExams] = useState<MockExam[]>([]);
-  const [subjectId, setSubjectId] = useState(subjectCatalog[0].id);
-  const [topicId, setTopicId] = useState(subjectCatalog[0].topics[0].id);
+  const [subjectId, setSubjectId] = useState(0);
+  const [topicId, setTopicId] = useState(0);
   const [studySyncMessage, setStudySyncMessage] = useState('');
   const [examSyncMessage, setExamSyncMessage] = useState('');
   const [solved, setSolved] = useState('');
@@ -49,8 +49,8 @@ export default function App() {
     [department, mockExams, profile?.dailyQuestionGoal, profile?.gemBalance, profile?.streakCount, studyLogs],
   );
 
-  const selectedSubject = subjects.find((item) => item.id === subjectId) ?? subjects[0];
-  const selectedTopic = selectedSubject.topics.find((item) => item.id === topicId) ?? selectedSubject.topics[0];
+  const selectedSubject = subjects.find((item) => item.id === subjectId);
+  const selectedTopic = selectedSubject?.topics.find((item) => item.id === topicId);
   const calendarDays = useMemo(
     () => buildCalendarDays(studyLogs, profile?.dailyQuestionGoal ?? 180),
     [profile?.dailyQuestionGoal, studyLogs],
@@ -140,8 +140,14 @@ export default function App() {
     if (nextSubjects.length === 0) return;
 
     setSubjects(nextSubjects);
-    setSubjectId(nextSubjects[0].id);
-    setTopicId(nextSubjects[0].topics[0]?.id ?? 0);
+    setSubjectId((currentSubjectId) => {
+      const nextSubject = nextSubjects.find((subject) => subject.id === currentSubjectId) ?? nextSubjects[0];
+      setTopicId((currentTopicId) => {
+        if (nextSubject.topics.some((topic) => topic.id === currentTopicId)) return currentTopicId;
+        return nextSubject.topics[0]?.id ?? 0;
+      });
+      return nextSubject.id;
+    });
   }
 
   async function loadStudyLogs() {
@@ -188,14 +194,17 @@ export default function App() {
     if (!nextSubject) return;
 
     setSubjectId(nextSubject.id);
-    setTopicId(nextSubject.topics[0].id);
+    setTopicId(nextSubject.topics[0]?.id ?? 0);
   }
 
   async function addStudyLog() {
     const solvedNumber = Number(solved);
     const correctNumber = Number(correct);
     if (solvedNumber <= 0 || correctNumber < 0) return;
-    if (!selectedSubject || !selectedTopic) return;
+    if (!selectedSubject || !selectedTopic) {
+      setStudySyncMessage('Ders ve konu listesi henüz hazır değil. Birkaç saniye sonra tekrar dene.');
+      return;
+    }
 
     setStudySyncMessage('');
 
