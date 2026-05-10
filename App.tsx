@@ -14,6 +14,7 @@ import { styles } from './src/styles';
 import type { CalendarDay, Department, MockExam, StudyLog, Subject, TabKey, UserProfile } from './src/types';
 import { createStudyStats } from './src/utils/study';
 import { DailyGoalPrompt } from './src/components/ui';
+import { getShortWeekdayForDateKey, getStudyLogDateKey, getTurkeyDateKey, isTurkeyToday, isTurkeyYesterday, shiftDateKey } from './src/utils/date';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
@@ -229,6 +230,7 @@ export default function App() {
         topic_id: selectedTopic.id,
         solved_count: solvedNumber,
         correct_count: correctSafe,
+        studied_at: getTurkeyDateKey(),
       })
       .select('id, subject_id, topic_id, solved_count, correct_count, wrong_count, studied_at, subjects(name), topics(name)')
       .single();
@@ -330,10 +332,10 @@ export default function App() {
   async function updateGoalCompletion(userId: string, todaySolvedAfterInsert: number) {
     if (!profile || todaySolvedAfterInsert < profile.dailyQuestionGoal) return;
 
-    const today = getLocalDateKey(new Date());
+    const today = getTurkeyDateKey();
     if (profile.lastGoalCompletedDate === today) return;
 
-    const nextStreak = isYesterday(profile.lastGoalCompletedDate) ? profile.streakCount + 1 : 1;
+    const nextStreak = isTurkeyYesterday(profile.lastGoalCompletedDate) ? profile.streakCount + 1 : 1;
     const nextGemBalance = profile.gemBalance + 1;
 
     setProfile({
@@ -523,28 +525,18 @@ function buildCalendarDays(logs: StudyLog[], target: number): CalendarDay[] {
     totals.set(key, (totals.get(key) ?? 0) + log.solved);
   });
 
+  const todayKey = getTurkeyDateKey();
+
   return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - index));
-    const key = getLocalDateKey(date);
+    const key = shiftDateKey(todayKey, index - 6);
     const solved = totals.get(key) ?? 0;
 
     return {
-      label: index === 6 ? 'Bugün' : getShortWeekday(date),
+      label: index === 6 ? 'Bugün' : getShortWeekdayForDateKey(key),
       solved,
       reachedGoal: solved >= target,
     };
   });
-}
-
-function getStudyLogDateKey(date: string) {
-  if (date === 'Bugün') return getLocalDateKey(new Date());
-  return date.slice(0, 10);
-}
-
-function getShortWeekday(date: Date) {
-  const labels = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-  return labels[date.getDay()];
 }
 
 function parseDepartment(value: unknown): Department {
@@ -558,20 +550,6 @@ function normalizeDepartment(department: Department) {
   if (department === 'Sayısal') return 'Sayisal';
   if (department === 'Eşit Ağırlık') return 'Esit Agirlik';
   return department;
-}
-
-function getLocalDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function isYesterday(date: string | null) {
-  if (!date) return false;
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return date === getLocalDateKey(yesterday);
 }
 
 function mapStudyLogRow(row: {
@@ -597,7 +575,7 @@ function mapStudyLogRow(row: {
     solved: row.solved_count,
     correct: row.correct_count,
     wrong: row.wrong_count,
-    date: isToday(row.studied_at) ? 'Bugün' : row.studied_at,
+    date: isTurkeyToday(row.studied_at) ? 'Bugün' : row.studied_at,
   };
 }
 
@@ -613,13 +591,8 @@ function mapMockExamRow(row: {
     name: row.name,
     tytNet: Number(row.tyt_net) || 0,
     aytNet: Number(row.ayt_net) || 0,
-    date: isToday(row.exam_date) ? 'Bugün' : row.exam_date,
+    date: isTurkeyToday(row.exam_date) ? 'Bugün' : row.exam_date,
   };
-}
-
-function isToday(date: string) {
-  const today = new Date().toISOString().slice(0, 10);
-  return date === today;
 }
 
 function prettifySubjectName(name: string) {

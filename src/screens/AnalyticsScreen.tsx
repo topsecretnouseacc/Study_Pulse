@@ -4,6 +4,7 @@ import { PageTitle, ProgressRow } from '../components/ui';
 import type { StudyLog } from '../types';
 import type { StudyStats } from '../utils/study';
 import { styles } from '../styles';
+import { getStudyLogDateKey, getTurkeyDateKey, shiftDateKey } from '../utils/date';
 
 type RangeKey = 'today' | 'week' | 'all';
 
@@ -126,21 +127,12 @@ function aggregate(logs: StudyLog[], getKey: (log: StudyLog) => string) {
 
 function filterLogsByRange(logs: StudyLog[], range: RangeKey) {
   if (range === 'all') return logs;
-  if (range === 'today') return logs.filter((log) => log.date === 'Bugün');
+  if (range === 'today') return logs.filter((log) => getStudyLogDateKey(log.date) === getTurkeyDateKey());
 
-  const start = new Date();
-  start.setDate(start.getDate() - 6);
-  const startKey = getDateKey(start);
+  const startKey = shiftDateKey(getTurkeyDateKey(), -6);
 
   return logs.filter((log) => {
-    const key = log.date === 'Bugün' ? getDateKey(new Date()) : log.date.slice(0, 10);
+    const key = getStudyLogDateKey(log.date);
     return key >= startKey;
   });
-}
-
-function getDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
