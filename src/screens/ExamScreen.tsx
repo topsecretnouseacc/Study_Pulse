@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import { ActivityRow, FormCard, Input, PageTitle } from '../components/ui';
 import type { MockExam } from '../types';
 import { styles } from '../styles';
+import { formatDateLabel } from '../utils/date';
 
 export function ExamScreen(props: {
   examName: string;
@@ -29,7 +30,7 @@ export function ExamScreen(props: {
 
       <Text style={styles.sectionTitleLarge}>Exam History</Text>
       {props.mockExams.map((exam) => (
-        <ActivityRow key={exam.id} title={exam.name} meta={`${exam.date} · TYT ${exam.tytNet} · AYT ${exam.aytNet}`} />
+        <ActivityRow key={exam.id} title={exam.name} meta={`${formatDateLabel(exam.date)} · TYT ${exam.tytNet} · AYT ${exam.aytNet}`} />
       ))}
     </View>
   );

@@ -69,18 +69,21 @@ export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) 
 
     const user = response.data.user;
     const metadata = user?.user_metadata ?? {};
+    const savedProfile = user ? await fetchProfile(user.id, user.email ?? nextProfile.email) : null;
 
-    onComplete({
-      id: user?.id,
-      fullName: (metadata.full_name as string | undefined) ?? nextProfile.fullName,
-      email: user?.email ?? nextProfile.email,
-      department: ((metadata.department as Department | undefined) ?? nextProfile.department),
-      dailyQuestionGoal: nextProfile.dailyQuestionGoal,
-      streakCount: nextProfile.streakCount,
-      gemBalance: nextProfile.gemBalance,
-      lastGoalCompletedDate: nextProfile.lastGoalCompletedDate,
-      dailyGoalSet: mode === 'register' ? nextProfile.dailyGoalSet : true,
-    });
+    onComplete(
+      savedProfile ?? {
+        id: user?.id,
+        fullName: (metadata.full_name as string | undefined) ?? nextProfile.fullName,
+        email: user?.email ?? nextProfile.email,
+        department: parseDepartment(metadata.department ?? nextProfile.department),
+        dailyQuestionGoal: nextProfile.dailyQuestionGoal,
+        streakCount: nextProfile.streakCount,
+        gemBalance: nextProfile.gemBalance,
+        lastGoalCompletedDate: nextProfile.lastGoalCompletedDate,
+        dailyGoalSet: nextProfile.dailyGoalSet,
+      },
+    );
 
     setIsSubmitting(false);
   }
@@ -179,6 +182,35 @@ export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) 
       </View>
     </View>
   );
+}
+
+async function fetchProfile(userId: string, email: string): Promise<UserProfile | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, full_name, department, daily_question_goal, streak_count, gem_balance, last_goal_completed_date, daily_goal_set')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    fullName: data.full_name ?? 'StudyPulse User',
+    email,
+    department: parseDepartment(data.department),
+    dailyQuestionGoal: data.daily_question_goal ?? 180,
+    streakCount: data.streak_count ?? 0,
+    gemBalance: data.gem_balance ?? 0,
+    lastGoalCompletedDate: data.last_goal_completed_date,
+    dailyGoalSet: data.daily_goal_set ?? false,
+  };
+}
+
+function parseDepartment(value: unknown): Department {
+  if (value === 'Edebiyat' || value === 'Eşit Ağırlık' || value === 'Sayısal' || value === 'Dil') return value;
+  if (value === 'Esit Agirlik') return 'Eşit Ağırlık';
+  if (value === 'Sayisal') return 'Sayısal';
+  return 'Sayısal';
 }
 
 function normalizeDepartment(department: Department) {

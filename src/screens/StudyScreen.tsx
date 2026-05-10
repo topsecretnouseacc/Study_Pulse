@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import { ActivityRow, ChipSelector, FormCard, Input, PageTitle } from '../components/ui';
 import type { StudyLog, Subject } from '../types';
 import { styles } from '../styles';
+import { formatDateLabel } from '../utils/date';
 
 export function StudyScreen(props: {
   subjects: Subject[];
@@ -53,7 +54,7 @@ export function StudyScreen(props: {
         <ActivityRow
           key={log.id}
           title={`${log.subject} - ${log.topic}`}
-          meta={`${log.date} · ${log.solved} soru · ${log.correct} doğru · ${log.wrong} yanlış`}
+          meta={`${formatDateLabel(log.date)} · ${log.solved} soru · ${log.correct} doğru · ${log.wrong} yanlış`}
         />
       ))}
     </View>

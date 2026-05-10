@@ -45,3 +45,11 @@ export function getStudyLogDateKey(date: string) {
   if (date === 'Bugün' || date === 'BugÃ¼n') return getTurkeyDateKey();
   return date.slice(0, 10);
 }
+
+export function formatDateLabel(date: string) {
+  const dateKey = getStudyLogDateKey(date);
+  const todayKey = getTurkeyDateKey();
+  if (dateKey === todayKey) return 'Bugün';
+  if (dateKey === shiftDateKey(todayKey, -1)) return 'Dün';
+  return dateKey;
+}

@@ -4,6 +4,7 @@ import type { CalendarDay, Department, StudyLog, Subject, UserProfile } from '..
 import type { StudyStats } from '../utils/study';
 import { getRecommendedSubjectNames, getSubjectShortLabel } from '../utils/study';
 import { styles } from '../styles';
+import { getStudyLogDateKey, getTurkeyDateKey } from '../utils/date';
 
 export function HomeScreen({
   stats,
@@ -34,7 +35,7 @@ export function HomeScreen({
   onOpenStudy: () => void;
   onOpenSubject: (subjectId: number) => void;
 }) {
-  const todayLogs = studyLogs.filter((log) => log.date === 'Bugün' || log.date === 'BugÃ¼n');
+  const todayLogs = studyLogs.filter((log) => getStudyLogDateKey(log.date) === getTurkeyDateKey());
   const suggestedSubjects = getRecommendedSubjectNames(department)
     .map((name) => subjects.find((subject) => subject.name === name))
     .filter((subject): subject is Subject => Boolean(subject))

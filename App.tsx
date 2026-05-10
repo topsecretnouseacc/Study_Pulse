@@ -14,7 +14,7 @@ import { styles } from './src/styles';
 import type { CalendarDay, Department, MockExam, StudyLog, Subject, TabKey, UserProfile } from './src/types';
 import { createStudyStats } from './src/utils/study';
 import { DailyGoalPrompt } from './src/components/ui';
-import { getShortWeekdayForDateKey, getStudyLogDateKey, getTurkeyDateKey, isTurkeyToday, isTurkeyYesterday, shiftDateKey } from './src/utils/date';
+import { getShortWeekdayForDateKey, getStudyLogDateKey, getTurkeyDateKey, isTurkeyYesterday, shiftDateKey } from './src/utils/date';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
@@ -252,6 +252,12 @@ export default function App() {
 
   async function addMockExam() {
     if (!examName.trim()) return;
+    const normalizedTytNet = normalizeExamNet(tytNet);
+    const normalizedAytNet = normalizeExamNet(aytNet);
+    if (normalizedTytNet > 120 || normalizedAytNet > 80) {
+      setExamSyncMessage('TYT neti 120, AYT neti 80 üstünde olamaz.');
+      return;
+    }
 
     setExamSyncMessage('');
     const { data: userData } = await supabase.auth.getUser();
@@ -265,8 +271,9 @@ export default function App() {
       .insert({
         user_id: userData.user.id,
         name: examName.trim(),
-        tyt_net: Number(tytNet) || 0,
-        ayt_net: Number(aytNet) || 0,
+        exam_date: getTurkeyDateKey(),
+        tyt_net: normalizedTytNet,
+        ayt_net: normalizedAytNet,
       })
       .select('id, name, exam_date, tyt_net, ayt_net')
       .single();
@@ -575,7 +582,7 @@ function mapStudyLogRow(row: {
     solved: row.solved_count,
     correct: row.correct_count,
     wrong: row.wrong_count,
-    date: isTurkeyToday(row.studied_at) ? 'Bugün' : row.studied_at,
+    date: row.studied_at,
   };
 }
 
@@ -591,8 +598,14 @@ function mapMockExamRow(row: {
     name: row.name,
     tytNet: Number(row.tyt_net) || 0,
     aytNet: Number(row.ayt_net) || 0,
-    date: isTurkeyToday(row.exam_date) ? 'Bugün' : row.exam_date,
+    date: row.exam_date,
   };
+}
+
+function normalizeExamNet(value: string) {
+  const normalized = Number(value.replace(',', '.'));
+  if (!Number.isFinite(normalized)) return 0;
+  return Math.max(0, normalized);
 }
 
 function prettifySubjectName(name: string) {

@@ -113,6 +113,14 @@ alter table public.mock_exams enable row level security;
 alter table public.ai_questions enable row level security;
 alter table public.gem_transactions enable row level security;
 
+drop policy if exists "Users can manage own profile" on public.profiles;
+drop policy if exists "Anyone can read subjects" on public.subjects;
+drop policy if exists "Anyone can read topics" on public.topics;
+drop policy if exists "Users can manage own study logs" on public.study_logs;
+drop policy if exists "Users can manage own mock exams" on public.mock_exams;
+drop policy if exists "Users can manage own AI questions" on public.ai_questions;
+drop policy if exists "Users can view own gem transactions" on public.gem_transactions;
+
 create policy "Users can manage own profile"
 on public.profiles for all
 using (auth.uid() = id)

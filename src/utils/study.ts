@@ -1,5 +1,6 @@
 import { departmentPlans, initialStudyLogs, subjectCatalog } from '../data/catalog';
 import type { Department, DepartmentPlan, MockExam, StudyLog, Subject } from '../types';
+import { getStudyLogDateKey, getTurkeyDateKey } from './date';
 
 export function createStudyStats(
   studyLogs: StudyLog[],
@@ -12,7 +13,7 @@ export function createStudyStats(
 ) {
   const activeSubjects = subjects.length > 0 ? subjects : subjectCatalog;
   const departmentPlan = createDepartmentPlan(department, activeSubjects);
-  const todayLogs = studyLogs.filter((log) => isTodayLabel(log.date));
+  const todayLogs = studyLogs.filter((log) => getStudyLogDateKey(log.date) === getTurkeyDateKey());
   const totalSolved = studyLogs.reduce((sum, log) => sum + log.solved, 0);
   const todaySolved = todayLogs.reduce((sum, log) => sum + log.solved, 0);
   const totalCorrect = studyLogs.reduce((sum, log) => sum + log.correct, 0);
@@ -134,8 +135,4 @@ function createDepartmentPlan(department: Department, subjects: Subject[]): Depa
     primarySubjectIds: primarySubjects.map((subject) => subject.id),
     targets,
   };
-}
-
-function isTodayLabel(date: string) {
-  return date === 'Bugün' || date === 'BugÃ¼n';
 }
