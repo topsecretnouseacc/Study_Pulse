@@ -9,7 +9,8 @@ The app helps students track solved questions, correct and wrong answers, daily 
 - Supabase Auth login and registration
 - High school track selection: Sayisal, Esit Agirlik, Edebiyat, Dil
 - Dashboard with daily question goal, remaining questions, review count, streak, and gem balance
-- Study calendar showing daily solved-question progress
+- Study calendar generated from the signed-in user's `study_logs`
+- First-login daily goal prompt for new users
 - Subject and topic selection from Supabase data
 - Study log creation backed by Supabase `study_logs`
 - Profile-based daily question goal
@@ -96,7 +97,7 @@ Run the SQL files in Supabase SQL Editor:
 2. `docs/supabase-profile-trigger.sql`
 3. `docs/supabase-profile-goals.sql`
 
-These create the required tables, policies, seed subjects/topics, profile automation, streak fields, and daily goal fields.
+These create the required tables, policies, seed subjects/topics, profile automation, streak fields, and daily goal fields. The study calendar does not use a separate table; it is calculated from `study_logs` so each account sees only its own real study history.
 
 Main tables:
 
@@ -118,14 +119,15 @@ Implemented:
 - Subject/topic loading from Supabase
 - Study log insertion into Supabase
 - Daily goal, streak, and gem logic
+- Real per-user study calendar derived from study logs
+- First-login daily goal setup prompt
 - Database schema and setup documentation
 
 Still planned:
 
 - Add chart components for stronger analytics
 - Add secure AI question solving through backend or Supabase Edge Functions
-- Improve calendar with real historical data
-- Add sign out and notification settings
+- Add notification settings
 
 ## Security Notes
 

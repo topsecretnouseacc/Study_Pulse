@@ -29,6 +29,7 @@ export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) 
       streakCount: 0,
       gemBalance: 0,
       lastGoalCompletedDate: null,
+      dailyGoalSet: false,
     };
 
     const response =
@@ -62,6 +63,7 @@ export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) 
         daily_question_goal: nextProfile.dailyQuestionGoal,
         streak_count: nextProfile.streakCount,
         gem_balance: nextProfile.gemBalance,
+        daily_goal_set: nextProfile.dailyGoalSet,
       });
     }
 
@@ -77,6 +79,7 @@ export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) 
       streakCount: nextProfile.streakCount,
       gemBalance: nextProfile.gemBalance,
       lastGoalCompletedDate: nextProfile.lastGoalCompletedDate,
+      dailyGoalSet: mode === 'register' ? nextProfile.dailyGoalSet : true,
     });
 
     setIsSubmitting(false);

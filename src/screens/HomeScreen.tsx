@@ -1,6 +1,6 @@
 import { Text, TouchableOpacity, View } from 'react-native';
 import { GoalRing, MiniDetail, Pill, StudyBlock, StudyCalendar, SubjectBar, SummaryMetric } from '../components/ui';
-import type { Department, StudyLog, UserProfile } from '../types';
+import type { CalendarDay, Department, StudyLog, UserProfile } from '../types';
 import type { StudyStats } from '../utils/study';
 import { getSubjectShortLabel } from '../utils/study';
 import { styles } from '../styles';
@@ -8,6 +8,7 @@ import { styles } from '../styles';
 export function HomeScreen({
   stats,
   studyLogs,
+  calendarDays,
   detailMode,
   showCalendar,
   department,
@@ -20,6 +21,7 @@ export function HomeScreen({
 }: {
   stats: StudyStats;
   studyLogs: StudyLog[];
+  calendarDays: CalendarDay[];
   detailMode: boolean;
   showCalendar: boolean;
   department: Department;
@@ -52,7 +54,7 @@ export function HomeScreen({
         <Text style={styles.weekText}>Week {stats.week} · {department}</Text>
       </View>
 
-      {showCalendar && <StudyCalendar todaySolved={stats.todaySolved} target={stats.dailyQuestionGoal} />}
+      {showCalendar && <StudyCalendar days={calendarDays} target={stats.dailyQuestionGoal} />}
 
       <View style={styles.focusCard}>
         <Text style={styles.focusLabel}>Focus Track</Text>

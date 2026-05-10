@@ -11,6 +11,7 @@ create table if not exists public.profiles (
   daily_question_goal integer not null default 180 check (daily_question_goal > 0),
   streak_count integer not null default 0 check (streak_count >= 0),
   last_goal_completed_date date,
+  daily_goal_set boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -141,7 +142,7 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, department, daily_question_goal, streak_count, gem_balance)
+  insert into public.profiles (id, full_name, department, daily_question_goal, streak_count, gem_balance, daily_goal_set)
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
@@ -153,7 +154,8 @@ begin
     end,
     180,
     0,
-    0
+    0,
+    false
   )
   on conflict (id) do update
   set
@@ -170,7 +172,7 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user_profile();
 
-insert into public.profiles (id, full_name, department)
+insert into public.profiles (id, full_name, department, daily_goal_set)
 select
   users.id,
   coalesce(users.raw_user_meta_data ->> 'full_name', split_part(users.email, '@', 1)),
@@ -179,7 +181,8 @@ select
     when users.raw_user_meta_data ->> 'department' = 'Eşit Ağırlık' then 'Esit Agirlik'
     when users.raw_user_meta_data ->> 'department' in ('Edebiyat', 'Dil') then users.raw_user_meta_data ->> 'department'
     else 'Sayisal'
-  end
+  end,
+  true
 from auth.users
 on conflict (id) do update
 set

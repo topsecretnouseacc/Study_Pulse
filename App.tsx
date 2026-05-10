@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { initialMockExams, initialStudyLogs, subjectCatalog, tabs } from './src/data/catalog';
+import { subjectCatalog, tabs } from './src/data/catalog';
 import { supabase } from './src/lib/supabase';
 import { AiScreen } from './src/screens/AiScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
@@ -11,8 +11,9 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
 import { styles } from './src/styles';
-import type { Department, MockExam, StudyLog, Subject, TabKey, UserProfile } from './src/types';
+import type { CalendarDay, Department, MockExam, StudyLog, Subject, TabKey, UserProfile } from './src/types';
 import { createStudyStats } from './src/utils/study';
+import { DailyGoalPrompt } from './src/components/ui';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
@@ -22,8 +23,8 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
   const [department, setDepartment] = useState<Department>('Sayısal');
   const [subjects, setSubjects] = useState<Subject[]>(subjectCatalog);
-  const [studyLogs, setStudyLogs] = useState<StudyLog[]>(initialStudyLogs);
-  const [mockExams, setMockExams] = useState<MockExam[]>(initialMockExams);
+  const [studyLogs, setStudyLogs] = useState<StudyLog[]>([]);
+  const [mockExams, setMockExams] = useState<MockExam[]>([]);
   const [subjectId, setSubjectId] = useState(subjectCatalog[0].id);
   const [topicId, setTopicId] = useState(subjectCatalog[0].topics[0].id);
   const [studySyncMessage, setStudySyncMessage] = useState('');
@@ -33,6 +34,7 @@ export default function App() {
   const [examName, setExamName] = useState('');
   const [tytNet, setTytNet] = useState('');
   const [aytNet, setAytNet] = useState('');
+  const [goalPromptInput, setGoalPromptInput] = useState('');
 
   const stats = useMemo(
     () =>
@@ -49,6 +51,10 @@ export default function App() {
 
   const selectedSubject = subjects.find((item) => item.id === subjectId) ?? subjects[0];
   const selectedTopic = selectedSubject.topics.find((item) => item.id === topicId) ?? selectedSubject.topics[0];
+  const calendarDays = useMemo(
+    () => buildCalendarDays(studyLogs, profile?.dailyQuestionGoal ?? 180),
+    [profile?.dailyQuestionGoal, studyLogs],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -89,13 +95,14 @@ export default function App() {
     const fallback = profileFromUser(user);
     const { data } = await supabase
       .from('profiles')
-      .select('id, full_name, department, daily_question_goal, streak_count, gem_balance, last_goal_completed_date')
+      .select('id, full_name, department, daily_question_goal, streak_count, gem_balance, last_goal_completed_date, daily_goal_set')
       .eq('id', user.id)
       .maybeSingle();
 
     const nextProfile = data ? profileFromProfileRow(data, fallback.email) : fallback;
     setProfile(nextProfile);
     setDepartment(nextProfile.department);
+    setGoalPromptInput(nextProfile.dailyGoalSet ? String(nextProfile.dailyQuestionGoal) : '');
   }
 
   useEffect(() => {
@@ -271,6 +278,7 @@ export default function App() {
   function completeAuth(nextProfile: UserProfile) {
     setProfile(nextProfile);
     setDepartment(nextProfile.department);
+    setGoalPromptInput(nextProfile.dailyGoalSet ? String(nextProfile.dailyQuestionGoal) : '');
   }
 
   async function selectDepartment(nextDepartment: Department) {
@@ -289,12 +297,20 @@ export default function App() {
   }
 
   async function updateDailyGoal(nextGoal: number) {
-    setProfile((current) => (current ? { ...current, dailyQuestionGoal: nextGoal } : current));
+    setProfile((current) => (current ? { ...current, dailyQuestionGoal: nextGoal, dailyGoalSet: true } : current));
+    setGoalPromptInput(String(nextGoal));
 
     const { data } = await supabase.auth.getUser();
     if (!data.user) return;
 
-    await supabase.from('profiles').update({ daily_question_goal: nextGoal }).eq('id', data.user.id);
+    await supabase.from('profiles').update({ daily_question_goal: nextGoal, daily_goal_set: true }).eq('id', data.user.id);
+  }
+
+  async function saveInitialDailyGoal() {
+    const nextGoal = Math.round(Number(goalPromptInput));
+    if (!Number.isFinite(nextGoal) || nextGoal <= 0) return;
+
+    await updateDailyGoal(nextGoal);
   }
 
   async function updateGoalCompletion(userId: string, todaySolvedAfterInsert: number) {
@@ -357,6 +373,7 @@ export default function App() {
             <HomeScreen
               stats={stats}
               studyLogs={studyLogs}
+              calendarDays={calendarDays}
               detailMode={detailMode}
               showCalendar={showCalendar}
               department={department}
@@ -427,6 +444,14 @@ export default function App() {
             );
           })}
             </View>
+
+            {!profile.dailyGoalSet && (
+              <DailyGoalPrompt
+                value={goalPromptInput}
+                onChangeText={setGoalPromptInput}
+                onSubmit={saveInitialDailyGoal}
+              />
+            )}
           </>
         )}
       </View>
@@ -445,6 +470,7 @@ function profileFromUser(user: { id?: string; email?: string; user_metadata?: Re
     streakCount: 0,
     gemBalance: 0,
     lastGoalCompletedDate: null,
+    dailyGoalSet: false,
   };
 }
 
@@ -457,6 +483,7 @@ function profileFromProfileRow(
     streak_count: number | null;
     gem_balance: number | null;
     last_goal_completed_date: string | null;
+    daily_goal_set: boolean | null;
   },
   email: string,
 ): UserProfile {
@@ -469,7 +496,40 @@ function profileFromProfileRow(
     streakCount: row.streak_count ?? 0,
     gemBalance: row.gem_balance ?? 0,
     lastGoalCompletedDate: row.last_goal_completed_date,
+    dailyGoalSet: row.daily_goal_set ?? false,
   };
+}
+
+function buildCalendarDays(logs: StudyLog[], target: number): CalendarDay[] {
+  const totals = new Map<string, number>();
+
+  logs.forEach((log) => {
+    const key = getStudyLogDateKey(log.date);
+    totals.set(key, (totals.get(key) ?? 0) + log.solved);
+  });
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    const key = getLocalDateKey(date);
+    const solved = totals.get(key) ?? 0;
+
+    return {
+      label: index === 6 ? 'Bugün' : getShortWeekday(date),
+      solved,
+      reachedGoal: solved >= target,
+    };
+  });
+}
+
+function getStudyLogDateKey(date: string) {
+  if (date === 'Bugün') return getLocalDateKey(new Date());
+  return date.slice(0, 10);
+}
+
+function getShortWeekday(date: Date) {
+  const labels = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+  return labels[date.getDay()];
 }
 
 function parseDepartment(value: unknown): Department {

@@ -47,4 +47,11 @@ export type UserProfile = {
   streakCount: number;
   gemBalance: number;
   lastGoalCompletedDate: string | null;
+  dailyGoalSet: boolean;
+};
+
+export type CalendarDay = {
+  label: string;
+  solved: number;
+  reachedGoal: boolean;
 };

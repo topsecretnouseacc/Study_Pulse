@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { calendarDays } from '../data/catalog';
-import type { Department, StudyLog, UserProfile } from '../types';
+import type { CalendarDay, Department, StudyLog, UserProfile } from '../types';
 import { getSubjectIcon } from '../utils/study';
 import { styles } from '../styles';
 
@@ -26,9 +25,7 @@ export function Pill({ icon, value, tone, caption }: { icon: string; value: stri
   );
 }
 
-export function StudyCalendar({ todaySolved, target }: { todaySolved: number; target: number }) {
-  const days = [...calendarDays.slice(0, 6), { label: 'Bugün', solved: todaySolved, reachedGoal: todaySolved >= target }];
-
+export function StudyCalendar({ days, target }: { days: CalendarDay[]; target: number }) {
   return (
     <View style={styles.calendarPanel}>
       <View style={styles.calendarPanelHeader}>
@@ -49,6 +46,38 @@ export function StudyCalendar({ todaySolved, target }: { todaySolved: number; ta
         })}
       </View>
       <Text style={styles.calendarFootnote}>Hedef tamamlanan her gün 1 elmas kazandırır.</Text>
+    </View>
+  );
+}
+
+export function DailyGoalPrompt({
+  value,
+  onChangeText,
+  onSubmit,
+}: {
+  value: string;
+  onChangeText: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <View style={styles.goalOverlay}>
+      <View style={styles.goalPromptCard}>
+        <Text style={styles.goalPromptTitle}>Günlük soru hedefin nedir?</Text>
+        <Text style={styles.goalPromptText}>
+          Bu hedef takvim, streak ve elmas kazanma sistemini belirleyecek. Daha sonra kullanıcı ayarlarından değiştirebilirsin.
+        </Text>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType="numeric"
+          placeholder="Soru sayısı"
+          placeholderTextColor="#808b96"
+          style={styles.goalPromptInput}
+        />
+        <TouchableOpacity accessibilityRole="button" onPress={onSubmit} style={styles.authSubmitButton}>
+          <Text style={styles.authSubmitText}>Hedefi kaydet</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
