@@ -106,6 +106,8 @@ create table if not exists public.gem_transactions (
 );
 
 alter table public.profiles enable row level security;
+alter table public.subjects enable row level security;
+alter table public.topics enable row level security;
 alter table public.study_logs enable row level security;
 alter table public.mock_exams enable row level security;
 alter table public.ai_questions enable row level security;
@@ -115,6 +117,16 @@ create policy "Users can manage own profile"
 on public.profiles for all
 using (auth.uid() = id)
 with check (auth.uid() = id);
+
+create policy "Anyone can read subjects"
+on public.subjects for select
+to anon, authenticated
+using (true);
+
+create policy "Anyone can read topics"
+on public.topics for select
+to anon, authenticated
+using (true);
 
 create policy "Users can manage own study logs"
 on public.study_logs for all

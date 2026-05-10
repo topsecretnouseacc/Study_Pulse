@@ -15,7 +15,7 @@ Use the base project URL. Do not include `/rest/v1/`.
 
 Run `docs/supabase-schema.sql` in the Supabase SQL Editor before testing database-backed features.
 
-If the Study screen keeps saying the subject list is loading, run `docs/supabase-seed-subjects.sql`. That file fills the `subjects` and `topics` tables and is safe to run more than once.
+If the Study screen keeps saying the subject list is loading, run `docs/supabase-catalog-fix.sql`. That file adds read policies for `subjects` and `topics`, fills the catalog, and is safe to run more than once.
 
 ## Auth
 

@@ -138,7 +138,7 @@ export default function App() {
     }));
 
     if (nextSubjects.length === 0) {
-      setStudySyncMessage('Supabase subjects/topics tabloları boş. docs/supabase-seed-subjects.sql dosyasını SQL Editor içinde çalıştır.');
+      setStudySyncMessage('Supabase dersleri görünmüyor. docs/supabase-catalog-fix.sql dosyasını SQL Editor içinde çalıştır.');
       return;
     }
 
