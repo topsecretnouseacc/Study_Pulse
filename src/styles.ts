@@ -322,7 +322,7 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
   },
-  blockTopic: { flex: 1, color: '#5c6268', fontSize: 15, fontWeight: '600' },
+  blockTopic: { flex: 1, color: '#5c6268', fontSize: 15, fontWeight: '600', marginTop: 7 },
   addCircle: {
     width: 50,
     height: 50,

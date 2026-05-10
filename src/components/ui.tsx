@@ -170,12 +170,9 @@ export function StudyBlock({ log, onAdd }: { log: StudyLog; onAdd: () => void })
         <Text style={styles.blockMeta}>
           {log.correct} / {log.solved} correct
         </Text>
-        <View style={styles.aiTagRow}>
-          <Text style={styles.aiTag}>AI</Text>
-          <Text numberOfLines={1} style={styles.blockTopic}>
-            {log.topic} · %{rate}
-          </Text>
-        </View>
+        <Text numberOfLines={1} style={styles.blockTopic}>
+          {log.topic} · %{rate}
+        </Text>
       </View>
       <TouchableOpacity accessibilityRole="button" onPress={onAdd} style={styles.addCircle}>
         <Text style={styles.addCircleText}>+</Text>
