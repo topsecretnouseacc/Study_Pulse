@@ -15,6 +15,8 @@ Use the base project URL. Do not include `/rest/v1/`.
 
 Run `docs/supabase-schema.sql` in the Supabase SQL Editor before testing database-backed features.
 
+If the Study screen keeps saying the subject list is loading, run `docs/supabase-seed-subjects.sql`. That file fills the `subjects` and `topics` tables and is safe to run more than once.
+
 ## Auth
 
 The app now uses Supabase Auth for sign up, sign in, and persisted sessions. Registration stores the student's selected track in user metadata and attempts to upsert the `profiles` table.

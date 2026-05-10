@@ -137,9 +137,13 @@ export default function App() {
         })),
     }));
 
-    if (nextSubjects.length === 0) return;
+    if (nextSubjects.length === 0) {
+      setStudySyncMessage('Supabase subjects/topics tabloları boş. docs/supabase-seed-subjects.sql dosyasını SQL Editor içinde çalıştır.');
+      return;
+    }
 
     setSubjects(nextSubjects);
+    setStudySyncMessage('');
     setSubjectId((currentSubjectId) => {
       const nextSubject = nextSubjects.find((subject) => subject.id === currentSubjectId) ?? nextSubjects[0];
       setTopicId((currentTopicId) => {

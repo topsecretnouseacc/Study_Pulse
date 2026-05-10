@@ -96,6 +96,7 @@ Run the SQL files in Supabase SQL Editor:
 1. `docs/supabase-schema.sql`
 2. `docs/supabase-profile-trigger.sql`
 3. `docs/supabase-profile-goals.sql`
+4. `docs/supabase-seed-subjects.sql` if `subjects` or `topics` are empty
 
 These create the required tables, policies, seed subjects/topics, profile automation, streak fields, and daily goal fields. The study calendar does not use a separate table; it is calculated from `study_logs` so each account sees only its own real study history.
 
