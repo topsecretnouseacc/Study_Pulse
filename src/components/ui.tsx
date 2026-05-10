@@ -182,17 +182,26 @@ export function Input({
   label,
   value,
   onChangeText,
+  placeholder,
   keyboardType = 'default',
 }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
+  placeholder?: string;
   keyboardType?: 'default' | 'numeric' | 'decimal-pad';
 }) {
   return (
     <View style={styles.inputWrap}>
       <Text style={styles.inputLabel}>{label}</Text>
-      <TextInput value={value} onChangeText={onChangeText} keyboardType={keyboardType} placeholderTextColor="#808b96" style={styles.input} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        placeholder={placeholder}
+        placeholderTextColor="#808b96"
+        style={styles.input}
+      />
     </View>
   );
 }

@@ -18,10 +18,10 @@ export function ExamScreen(props: {
     <View style={styles.screen}>
       <PageTitle title="Mock Exams" subtitle="TYT ve AYT deneme netlerini takip et." />
       <FormCard title="Deneme sonucu ekle" actionLabel="Denemeyi kaydet" onAction={props.addMockExam}>
-        <Input label="Deneme adı" value={props.examName} onChangeText={props.setExamName} />
+        <Input label="Deneme adı" value={props.examName} onChangeText={props.setExamName} placeholder="Deneme adını gir" />
         <View style={styles.inputRow}>
-          <Input label="TYT net" value={props.tytNet} onChangeText={props.setTytNet} keyboardType="decimal-pad" />
-          <Input label="AYT net" value={props.aytNet} onChangeText={props.setAytNet} keyboardType="decimal-pad" />
+          <Input label="TYT net" value={props.tytNet} onChangeText={props.setTytNet} keyboardType="decimal-pad" placeholder="0" />
+          <Input label="AYT net" value={props.aytNet} onChangeText={props.setAytNet} keyboardType="decimal-pad" placeholder="0" />
         </View>
       </FormCard>
 

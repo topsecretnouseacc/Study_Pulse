@@ -28,11 +28,11 @@ export default function App() {
   const [topicId, setTopicId] = useState(subjectCatalog[0].topics[0].id);
   const [studySyncMessage, setStudySyncMessage] = useState('');
   const [examSyncMessage, setExamSyncMessage] = useState('');
-  const [solved, setSolved] = useState('30');
-  const [correct, setCorrect] = useState('22');
-  const [examName, setExamName] = useState('TYT Genel Deneme');
-  const [tytNet, setTytNet] = useState('70');
-  const [aytNet, setAytNet] = useState('45');
+  const [solved, setSolved] = useState('');
+  const [correct, setCorrect] = useState('');
+  const [examName, setExamName] = useState('');
+  const [tytNet, setTytNet] = useState('');
+  const [aytNet, setAytNet] = useState('');
 
   const stats = useMemo(
     () =>
@@ -221,6 +221,8 @@ export default function App() {
       mapStudyLogRow(data),
       ...current,
     ]);
+    setSolved('');
+    setCorrect('');
     await updateGoalCompletion(userData.user.id, solvedBeforeInsert + solvedNumber);
     setStudySyncMessage('Çalışma kaydı Supabase’e eklendi.');
   }
@@ -255,6 +257,9 @@ export default function App() {
       mapMockExamRow(data),
       ...current,
     ]);
+    setExamName('');
+    setTytNet('');
+    setAytNet('');
     setExamSyncMessage('Deneme sonucu Supabase’e eklendi.');
   }
 
@@ -324,6 +329,16 @@ export default function App() {
     });
   }
 
+  async function signOut() {
+    await supabase.auth.signOut();
+    setProfile(null);
+    setActiveTab('home');
+    setStudyLogs([]);
+    setMockExams([]);
+    setStudySyncMessage('');
+    setExamSyncMessage('');
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -385,7 +400,12 @@ export default function App() {
           {activeTab === 'analytics' && <AnalyticsScreen stats={stats} studyLogs={studyLogs} />}
           {activeTab === 'ai' && <AiScreen />}
           {activeTab === 'settings' && (
-            <SettingsScreen profile={profile} onSelectDepartment={selectDepartment} onUpdateDailyGoal={updateDailyGoal} />
+            <SettingsScreen
+              profile={profile}
+              onSelectDepartment={selectDepartment}
+              onUpdateDailyGoal={updateDailyGoal}
+              onSignOut={signOut}
+            />
           )}
             </ScrollView>
 

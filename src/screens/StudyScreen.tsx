@@ -36,8 +36,8 @@ export function StudyScreen(props: {
           onSelect={props.setTopicId}
         />
         <View style={styles.inputRow}>
-          <Input label="Çözülen" value={props.solved} onChangeText={props.setSolved} keyboardType="numeric" />
-          <Input label="Doğru" value={props.correct} onChangeText={props.setCorrect} keyboardType="numeric" />
+          <Input label="Çözülen" value={props.solved} onChangeText={props.setSolved} keyboardType="numeric" placeholder="0" />
+          <Input label="Doğru" value={props.correct} onChangeText={props.setCorrect} keyboardType="numeric" placeholder="0" />
         </View>
       </FormCard>
 

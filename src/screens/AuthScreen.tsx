@@ -8,9 +8,9 @@ const departments: Department[] = ['Sayısal', 'Eşit Ağırlık', 'Edebiyat', '
 
 export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('register');
-  const [fullName, setFullName] = useState('Poyraz Gezgin');
-  const [email, setEmail] = useState('poyraz@example.com');
-  const [password, setPassword] = useState('123456');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [department, setDepartment] = useState<Department>('Sayısal');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -113,7 +113,13 @@ export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) 
         {mode === 'register' && (
           <View style={styles.authInputWrap}>
             <Text style={styles.inputLabel}>Ad Soyad</Text>
-            <TextInput value={fullName} onChangeText={setFullName} style={styles.input} placeholderTextColor="#808b96" />
+            <TextInput
+              value={fullName}
+              onChangeText={setFullName}
+              style={styles.input}
+              placeholder="Adını ve soyadını gir"
+              placeholderTextColor="#808b96"
+            />
           </View>
         )}
 
@@ -125,13 +131,21 @@ export function AuthScreen({ onComplete }: { onComplete: (profile: UserProfile) 
             autoCapitalize="none"
             keyboardType="email-address"
             style={styles.input}
+            placeholder="E-posta adresini gir"
             placeholderTextColor="#808b96"
           />
         </View>
 
         <View style={styles.authInputWrap}>
           <Text style={styles.inputLabel}>Şifre</Text>
-          <TextInput value={password} onChangeText={setPassword} secureTextEntry style={styles.input} placeholderTextColor="#808b96" />
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.input}
+            placeholder="Şifreni gir"
+            placeholderTextColor="#808b96"
+          />
         </View>
 
         {mode === 'register' && (

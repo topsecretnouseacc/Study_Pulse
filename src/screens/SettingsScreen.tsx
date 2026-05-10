@@ -9,10 +9,12 @@ export function SettingsScreen({
   profile,
   onSelectDepartment,
   onUpdateDailyGoal,
+  onSignOut,
 }: {
   profile: UserProfile;
   onSelectDepartment: (department: Department) => void;
   onUpdateDailyGoal: (goal: number) => void;
+  onSignOut: () => void;
 }) {
   const [page, setPage] = useState<'root' | 'user' | 'app'>('root');
   const [goalInput, setGoalInput] = useState(String(profile.dailyQuestionGoal));
@@ -66,6 +68,10 @@ export function SettingsScreen({
             </TouchableOpacity>
           </View>
         </View>
+
+        <TouchableOpacity accessibilityRole="button" onPress={onSignOut} style={styles.signOutButton}>
+          <Text style={styles.signOutText}>Çıkış yap</Text>
+        </TouchableOpacity>
       </View>
     );
   }
