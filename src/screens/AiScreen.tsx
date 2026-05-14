@@ -87,11 +87,14 @@ export function AiScreen({
 
       <Text style={styles.sectionTitleLarge}>AI History</Text>
       {aiQuestions.map((question) => (
-        <ActivityRow
-          key={question.id}
-          title={`${question.subject} - ${question.topic}`}
-          meta={`${formatDateLabel(question.createdAt)} · ${formatStatus(question.status)}`}
-        />
+        <View key={question.id} style={styles.aiHistoryCard}>
+          <ActivityRow
+            title={`${question.subject} - ${question.topic}`}
+            meta={`${formatDateLabel(question.createdAt)} · ${formatStatus(question.status)}`}
+          />
+          {question.prompt ? <Text style={styles.aiQuestionText}>{question.prompt}</Text> : null}
+          {question.solution ? <Text style={styles.aiSolutionText}>{question.solution}</Text> : null}
+        </View>
       ))}
     </View>
   );

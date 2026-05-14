@@ -388,10 +388,36 @@ export default function App() {
       related_ai_question_id: question.id,
     });
 
+    const nextQuestion = mapAiQuestionRow(question);
     setProfile((current) => (current ? { ...current, gemBalance: nextGemBalance } : current));
-    setAiQuestions((current) => [mapAiQuestionRow(question), ...current]);
+    setAiQuestions((current) => [nextQuestion, ...current]);
     setAiPrompt('');
-    setAiSyncMessage('AI isteği kaydedildi. Çözüm motoru sonraki adımda bağlanacak.');
+    setAiSyncMessage('AI isteği kaydedildi. Çözüm üretiliyor...');
+
+    const { data: solvedQuestion, error: solveError } = await supabase.functions.invoke('solve-question', {
+      body: { questionId: question.id },
+    });
+
+    if (solveError) {
+      setAiQuestions((current) =>
+        current.map((item) => (item.id === question.id ? { ...item, status: 'failed', solution: solveError.message } : item)),
+      );
+      setAiSyncMessage(solveError.message);
+      return;
+    }
+
+    setAiQuestions((current) =>
+      current.map((item) =>
+        item.id === question.id
+          ? {
+              ...item,
+              status: 'solved',
+              solution: typeof solvedQuestion?.solution === 'string' ? solvedQuestion.solution : item.solution,
+            }
+          : item,
+      ),
+    );
+    setAiSyncMessage('AI çözümü hazır.');
   }
 
   function openStudyForSubject(nextSubjectId: number) {
