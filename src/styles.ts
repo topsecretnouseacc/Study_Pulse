@@ -376,6 +376,7 @@ export const styles = StyleSheet.create({
     marginTop: 2,
   },
   primaryButtonText: { color: '#ffffff', fontWeight: '900', fontSize: 15 },
+  disabledButton: { opacity: 0.42 },
   secondaryButton: {
     minHeight: 50,
     borderRadius: 16,
@@ -431,6 +432,8 @@ export const styles = StyleSheet.create({
   },
   aiTitle: { color: '#ffffff', fontSize: 25, lineHeight: 31, letterSpacing: 0, fontWeight: '900' },
   aiCopy: { color: '#cdd3d8', fontSize: 15, lineHeight: 22, marginTop: 10, fontWeight: '700' },
+  aiGemText: { color: '#54d6b3', fontSize: 16, fontWeight: '900', marginTop: 14 },
+  aiPromptInput: { minHeight: 118, paddingTop: 13, textAlignVertical: 'top' },
   tabBar: {
     position: 'absolute',
     left: 0,

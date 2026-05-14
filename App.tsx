@@ -11,7 +11,7 @@ import { HomeScreen } from './src/screens/HomeScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { StudyScreen } from './src/screens/StudyScreen';
 import { styles } from './src/styles';
-import type { CalendarDay, Department, MockExam, StudyLog, Subject, TabKey, UserProfile } from './src/types';
+import type { AiQuestion, CalendarDay, Department, MockExam, StudyLog, Subject, TabKey, UserProfile } from './src/types';
 import { createStudyStats } from './src/utils/study';
 import { DailyGoalPrompt } from './src/components/ui';
 import { getShortWeekdayForDateKey, getStudyLogDateKey, getTurkeyDateKey, isTurkeyYesterday, shiftDateKey } from './src/utils/date';
@@ -26,15 +26,20 @@ export default function App() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [studyLogs, setStudyLogs] = useState<StudyLog[]>([]);
   const [mockExams, setMockExams] = useState<MockExam[]>([]);
+  const [aiQuestions, setAiQuestions] = useState<AiQuestion[]>([]);
   const [subjectId, setSubjectId] = useState(0);
   const [topicId, setTopicId] = useState(0);
+  const [aiSubjectId, setAiSubjectId] = useState(0);
+  const [aiTopicId, setAiTopicId] = useState(0);
   const [studySyncMessage, setStudySyncMessage] = useState('');
   const [examSyncMessage, setExamSyncMessage] = useState('');
+  const [aiSyncMessage, setAiSyncMessage] = useState('');
   const [solved, setSolved] = useState('');
   const [correct, setCorrect] = useState('');
   const [examName, setExamName] = useState('');
   const [tytNet, setTytNet] = useState('');
   const [aytNet, setAytNet] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
   const [goalPromptInput, setGoalPromptInput] = useState('');
 
   const stats = useMemo(
@@ -113,6 +118,7 @@ export default function App() {
     loadSubjects();
     loadStudyLogs();
     loadMockExams();
+    loadAiQuestions();
   }, [profile]);
 
   async function loadSubjects() {
@@ -149,6 +155,14 @@ export default function App() {
     setSubjectId((currentSubjectId) => {
       const nextSubject = nextSubjects.find((subject) => subject.id === currentSubjectId) ?? nextSubjects[0];
       setTopicId((currentTopicId) => {
+        if (nextSubject.topics.some((topic) => topic.id === currentTopicId)) return currentTopicId;
+        return nextSubject.topics[0]?.id ?? 0;
+      });
+      return nextSubject.id;
+    });
+    setAiSubjectId((currentSubjectId) => {
+      const nextSubject = nextSubjects.find((subject) => subject.id === currentSubjectId) ?? nextSubjects[0];
+      setAiTopicId((currentTopicId) => {
         if (nextSubject.topics.some((topic) => topic.id === currentTopicId)) return currentTopicId;
         return nextSubject.topics[0]?.id ?? 0;
       });
@@ -195,12 +209,34 @@ export default function App() {
     setMockExams(data.map(mapMockExamRow));
   }
 
+  async function loadAiQuestions() {
+    const { data, error } = await supabase
+      .from('ai_questions')
+      .select('id, subject_id, topic_id, prompt, solution, status, created_at, subjects(name), topics(name)')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      setAiSyncMessage(error?.message ?? 'AI kayıtları yüklenemedi.');
+      return;
+    }
+
+    setAiQuestions(data.map(mapAiQuestionRow));
+  }
+
   function selectSubject(nextSubjectId: number) {
     const nextSubject = subjects.find((item) => item.id === nextSubjectId);
     if (!nextSubject) return;
 
     setSubjectId(nextSubject.id);
     setTopicId(nextSubject.topics[0]?.id ?? 0);
+  }
+
+  function selectAiSubject(nextSubjectId: number) {
+    const nextSubject = subjects.find((item) => item.id === nextSubjectId);
+    if (!nextSubject) return;
+
+    setAiSubjectId(nextSubject.id);
+    setAiTopicId(nextSubject.topics[0]?.id ?? 0);
   }
 
   async function addStudyLog() {
@@ -293,6 +329,71 @@ export default function App() {
     setExamSyncMessage('Deneme sonucu Supabase’e eklendi.');
   }
 
+  async function addAiQuestion() {
+    const selectedAiSubject = subjects.find((item) => item.id === aiSubjectId);
+    const selectedAiTopic = selectedAiSubject?.topics.find((item) => item.id === aiTopicId);
+    if (!profile || profile.gemBalance <= 0) {
+      setAiSyncMessage('AI isteği için en az 1 elmas gerekir.');
+      return;
+    }
+    if (!selectedAiSubject || !selectedAiTopic) {
+      setAiSyncMessage('Ders ve konu listesi hazır değil.');
+      return;
+    }
+    if (!aiPrompt.trim()) {
+      setAiSyncMessage('Soru metni veya not gir.');
+      return;
+    }
+
+    setAiSyncMessage('');
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      setAiSyncMessage('AI isteği için giriş yapmalısın.');
+      return;
+    }
+
+    const { data: question, error } = await supabase
+      .from('ai_questions')
+      .insert({
+        user_id: userData.user.id,
+        image_path: `manual-entry/${userData.user.id}/${Date.now()}`,
+        subject_id: selectedAiSubject.id,
+        topic_id: selectedAiTopic.id,
+        prompt: aiPrompt.trim(),
+        status: 'pending',
+      })
+      .select('id, subject_id, topic_id, prompt, solution, status, created_at, subjects(name), topics(name)')
+      .single();
+
+    if (error || !question) {
+      setAiSyncMessage(error?.message ?? 'AI isteği kaydedilemedi.');
+      return;
+    }
+
+    const nextGemBalance = Math.max(profile.gemBalance - 1, 0);
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ gem_balance: nextGemBalance })
+      .eq('id', userData.user.id);
+
+    if (profileError) {
+      setAiSyncMessage(profileError.message);
+      return;
+    }
+
+    await supabase.from('gem_transactions').insert({
+      user_id: userData.user.id,
+      amount: -1,
+      reason: 'ai_question_spent',
+      related_ai_question_id: question.id,
+    });
+
+    setProfile((current) => (current ? { ...current, gemBalance: nextGemBalance } : current));
+    setAiQuestions((current) => [mapAiQuestionRow(question), ...current]);
+    setAiPrompt('');
+    setAiSyncMessage('AI isteği kaydedildi. Çözüm motoru sonraki adımda bağlanacak.');
+  }
+
   function openStudyForSubject(nextSubjectId: number) {
     selectSubject(nextSubjectId);
     setActiveTab('study');
@@ -374,8 +475,10 @@ export default function App() {
     setActiveTab('home');
     setStudyLogs([]);
     setMockExams([]);
+    setAiQuestions([]);
     setStudySyncMessage('');
     setExamSyncMessage('');
+    setAiSyncMessage('');
   }
 
   return (
@@ -439,7 +542,21 @@ export default function App() {
             />
           )}
           {activeTab === 'analytics' && <AnalyticsScreen stats={stats} studyLogs={studyLogs} />}
-          {activeTab === 'ai' && <AiScreen />}
+          {activeTab === 'ai' && (
+            <AiScreen
+              subjects={subjects}
+              selectedSubjectId={aiSubjectId}
+              selectedTopicId={aiTopicId}
+              prompt={aiPrompt}
+              gemBalance={profile.gemBalance}
+              aiQuestions={aiQuestions}
+              syncMessage={aiSyncMessage}
+              onSelectSubject={selectAiSubject}
+              onSelectTopic={setAiTopicId}
+              onChangePrompt={setAiPrompt}
+              onSubmit={addAiQuestion}
+            />
+          )}
           {activeTab === 'settings' && (
             <SettingsScreen
               profile={profile}
@@ -600,6 +717,38 @@ function mapMockExamRow(row: {
     aytNet: Number(row.ayt_net) || 0,
     date: row.exam_date,
   };
+}
+
+function mapAiQuestionRow(row: {
+  id: number;
+  subject_id: number | null;
+  topic_id: number | null;
+  prompt: string | null;
+  solution: string | null;
+  status: string;
+  created_at: string;
+  subjects: { name: string } | { name: string }[] | null;
+  topics: { name: string } | { name: string }[] | null;
+}): AiQuestion {
+  const subject = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
+  const topic = Array.isArray(row.topics) ? row.topics[0] : row.topics;
+
+  return {
+    id: row.id,
+    subjectId: row.subject_id,
+    topicId: row.topic_id,
+    subject: prettifySubjectName(subject?.name ?? 'Ders'),
+    topic: prettifyTopicName(topic?.name ?? 'Konu'),
+    prompt: row.prompt ?? '',
+    solution: row.solution,
+    status: parseAiStatus(row.status),
+    createdAt: row.created_at.slice(0, 10),
+  };
+}
+
+function parseAiStatus(status: string): AiQuestion['status'] {
+  if (status === 'solved' || status === 'failed') return status;
+  return 'pending';
 }
 
 function normalizeExamNet(value: string) {

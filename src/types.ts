@@ -32,6 +32,18 @@ export type MockExam = {
   date: string;
 };
 
+export type AiQuestion = {
+  id: number;
+  subjectId: number | null;
+  topicId: number | null;
+  subject: string;
+  topic: string;
+  prompt: string;
+  solution: string | null;
+  status: 'pending' | 'solved' | 'failed';
+  createdAt: string;
+};
+
 export type DepartmentPlan = {
   primarySubjectIds: number[];
   targets: Record<number, number>;

@@ -120,6 +120,7 @@ drop policy if exists "Users can manage own study logs" on public.study_logs;
 drop policy if exists "Users can manage own mock exams" on public.mock_exams;
 drop policy if exists "Users can manage own AI questions" on public.ai_questions;
 drop policy if exists "Users can view own gem transactions" on public.gem_transactions;
+drop policy if exists "Users can insert own gem transactions" on public.gem_transactions;
 
 create policy "Users can manage own profile"
 on public.profiles for all
@@ -154,6 +155,10 @@ with check (auth.uid() = user_id);
 create policy "Users can view own gem transactions"
 on public.gem_transactions for select
 using (auth.uid() = user_id);
+
+create policy "Users can insert own gem transactions"
+on public.gem_transactions for insert
+with check (auth.uid() = user_id);
 
 create or replace function public.handle_new_user_profile()
 returns trigger
