@@ -95,6 +95,10 @@ serve(async (req) => {
       }
 
       const bytes = new Uint8Array(await imageData.arrayBuffer());
+      if (bytes.length === 0) {
+        throw new Error('Question image is empty. Please upload the photo again.');
+      }
+
       content.push({
         type: 'input_image',
         image_url: `data:${getMimeType(question.image_path)};base64,${base64FromBytes(bytes)}`,

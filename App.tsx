@@ -341,6 +341,7 @@ export default function App() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
+      base64: true,
       quality: 0.82,
     });
 
@@ -359,6 +360,7 @@ export default function App() {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
+      base64: true,
       quality: 0.82,
     });
 
@@ -371,13 +373,17 @@ export default function App() {
   async function uploadAiImage(userId: string, image: PickedAiImage) {
     try {
       setAiSyncMessage('Fotoğraf yükleniyor...');
-      const response = await fetch(image.uri);
-      const blob = await response.blob();
+      if (!image.base64) {
+        setAiSyncMessage('Fotoğraf okunamadı. Tekrar çekmeyi veya galeriden yeniden seçmeyi dene.');
+        return null;
+      }
+
+      const fileBytes = base64ToArrayBuffer(image.base64);
       const path = `${userId}/${Date.now()}-${image.fileName}`;
 
       const { error } = await supabase.storage
         .from('ai-question-images')
-        .upload(path, blob, {
+        .upload(path, fileBytes, {
           contentType: image.mimeType,
           upsert: false,
         });
@@ -719,6 +725,7 @@ type PickedAiImage = {
   uri: string;
   fileName: string;
   mimeType: string;
+  base64: string;
 };
 
 function profileFromProfileRow(
@@ -778,6 +785,7 @@ function toPickedAiImage(asset: ImagePicker.ImagePickerAsset): PickedAiImage {
     uri: asset.uri,
     fileName: sanitizeFileName(fileName, extension),
     mimeType,
+    base64: asset.base64 ?? '',
   };
 }
 
@@ -785,6 +793,17 @@ function sanitizeFileName(fileName: string, fallbackExtension: string) {
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '-');
   if (safeName.includes('.')) return safeName;
   return `${safeName}.${fallbackExtension}`;
+}
+
+function base64ToArrayBuffer(base64: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes.buffer;
 }
 
 function parseDepartment(value: unknown): Department {
