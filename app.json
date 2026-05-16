@@ -13,9 +13,17 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "StudyPulse, soru fotoğrafını AI çözümüne göndermek için kamerayı kullanır.",
+        "NSPhotoLibraryUsageDescription": "StudyPulse, galeriden soru fotoğrafı seçebilmen için fotoğraf erişimi ister."
+      }
     },
     "android": {
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

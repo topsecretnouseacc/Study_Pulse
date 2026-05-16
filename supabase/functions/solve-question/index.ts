@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.105.4';
 type AiQuestionRow = {
   id: number;
   user_id: string;
+  image_path: string;
   prompt: string | null;
   solution: string | null;
   status: 'pending' | 'solved' | 'failed';
@@ -54,7 +55,7 @@ serve(async (req) => {
 
     const { data: question, error: questionError } = await adminClient
       .from('ai_questions')
-      .select('id, user_id, prompt, solution, status, subjects(name), topics(name)')
+      .select('id, user_id, image_path, prompt, solution, status, subjects(name), topics(name)')
       .eq('id', questionId)
       .single<AiQuestionRow>();
 
@@ -70,6 +71,36 @@ serve(async (req) => {
       return json({ solution: question.solution, status: question.status });
     }
 
+    const content: Array<
+      | { type: 'input_text'; text: string }
+      | { type: 'input_image'; image_url: string }
+    > = [
+      {
+        type: 'input_text',
+        text: [
+          `Ders: ${question.subjects?.name ?? 'Belirtilmedi'}`,
+          `Konu: ${question.topics?.name ?? 'Belirtilmedi'}`,
+          `Soru/not: ${question.prompt ?? 'Görseldeki soruyu çöz.'}`,
+        ].join('\n'),
+      },
+    ];
+
+    if (question.image_path && !question.image_path.startsWith('manual-entry/')) {
+      const { data: imageData, error: imageError } = await adminClient.storage
+        .from('ai-question-images')
+        .download(question.image_path);
+
+      if (imageError || !imageData) {
+        throw new Error(imageError?.message ?? 'Question image could not be loaded.');
+      }
+
+      const bytes = new Uint8Array(await imageData.arrayBuffer());
+      content.push({
+        type: 'input_image',
+        image_url: `data:${getMimeType(question.image_path)};base64,${base64FromBytes(bytes)}`,
+      });
+    }
+
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -79,20 +110,11 @@ serve(async (req) => {
       body: JSON.stringify({
         model,
         instructions:
-          'Sen Türkiye YKS öğrencilerine yardım eden uzman bir öğretmensin. Cevabı Türkçe ver. Önce kısa yöntem, sonra adım adım çözüm, en sonda final cevap yaz. Emin olmadığın nokta varsa belirt.',
+          'Sen Türkiye YKS öğrencilerine yardım eden uzman bir öğretmensin. Cevabı Türkçe ver. Önce kısa yöntem, sonra adım adım çözüm, en sonda final cevap yaz. Görseldeki metni okuyamıyorsan bunu açıkça belirt.',
         input: [
           {
             role: 'user',
-            content: [
-              {
-                type: 'input_text',
-                text: [
-                  `Ders: ${question.subjects?.name ?? 'Belirtilmedi'}`,
-                  `Konu: ${question.topics?.name ?? 'Belirtilmedi'}`,
-                  `Soru/not: ${question.prompt ?? ''}`,
-                ].join('\n'),
-              },
-            ],
+            content,
           },
         ],
       }),
@@ -132,6 +154,25 @@ function extractOutputText(result: { output_text?: string; output?: Array<{ cont
     .join('\n\n');
 
   return text || 'Çözüm üretilemedi.';
+}
+
+function getMimeType(path: string) {
+  const normalized = path.toLowerCase();
+  if (normalized.endsWith('.png')) return 'image/png';
+  if (normalized.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
+function base64FromBytes(bytes: Uint8Array) {
+  const chunkSize = 0x8000;
+  let binary = '';
+
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
 }
 
 function json(body: unknown, status = 200) {

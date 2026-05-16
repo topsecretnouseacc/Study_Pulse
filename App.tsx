@@ -1,4 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { tabs } from './src/data/catalog';
@@ -40,6 +41,7 @@ export default function App() {
   const [tytNet, setTytNet] = useState('');
   const [aytNet, setAytNet] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
+  const [aiImage, setAiImage] = useState<PickedAiImage | null>(null);
   const [goalPromptInput, setGoalPromptInput] = useState('');
 
   const stats = useMemo(
@@ -212,7 +214,7 @@ export default function App() {
   async function loadAiQuestions() {
     const { data, error } = await supabase
       .from('ai_questions')
-      .select('id, subject_id, topic_id, prompt, solution, status, created_at, subjects(name), topics(name)')
+      .select('id, subject_id, topic_id, image_path, prompt, solution, status, created_at, subjects(name), topics(name)')
       .order('created_at', { ascending: false });
 
     if (error || !data) {
@@ -329,6 +331,69 @@ export default function App() {
     setExamSyncMessage('Deneme sonucu Supabase’e eklendi.');
   }
 
+  async function pickAiImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setAiSyncMessage('Galeri izni verilmeden fotoğraf seçilemez.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.82,
+    });
+
+    if (!result.canceled) {
+      setAiImage(toPickedAiImage(result.assets[0]));
+      setAiSyncMessage('');
+    }
+  }
+
+  async function takeAiPhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setAiSyncMessage('Kamera izni verilmeden fotoğraf çekilemez.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.82,
+    });
+
+    if (!result.canceled) {
+      setAiImage(toPickedAiImage(result.assets[0]));
+      setAiSyncMessage('');
+    }
+  }
+
+  async function uploadAiImage(userId: string, image: PickedAiImage) {
+    try {
+      setAiSyncMessage('Fotoğraf yükleniyor...');
+      const response = await fetch(image.uri);
+      const blob = await response.blob();
+      const path = `${userId}/${Date.now()}-${image.fileName}`;
+
+      const { error } = await supabase.storage
+        .from('ai-question-images')
+        .upload(path, blob, {
+          contentType: image.mimeType,
+          upsert: false,
+        });
+
+      if (error) {
+        setAiSyncMessage(error.message);
+        return null;
+      }
+
+      return path;
+    } catch (error) {
+      setAiSyncMessage(error instanceof Error ? error.message : 'Fotoğraf yüklenemedi.');
+      return null;
+    }
+  }
+
   async function addAiQuestion() {
     const selectedAiSubject = subjects.find((item) => item.id === aiSubjectId);
     const selectedAiTopic = selectedAiSubject?.topics.find((item) => item.id === aiTopicId);
@@ -340,8 +405,8 @@ export default function App() {
       setAiSyncMessage('Ders ve konu listesi hazır değil.');
       return;
     }
-    if (!aiPrompt.trim()) {
-      setAiSyncMessage('Soru metni veya not gir.');
+    if (!aiPrompt.trim() && !aiImage) {
+      setAiSyncMessage('Soru metni gir ya da fotoğraf ekle.');
       return;
     }
 
@@ -352,17 +417,20 @@ export default function App() {
       return;
     }
 
+    const imagePath = aiImage ? await uploadAiImage(userData.user.id, aiImage) : `manual-entry/${userData.user.id}/${Date.now()}`;
+    if (!imagePath) return;
+
     const { data: question, error } = await supabase
       .from('ai_questions')
       .insert({
         user_id: userData.user.id,
-        image_path: `manual-entry/${userData.user.id}/${Date.now()}`,
+        image_path: imagePath,
         subject_id: selectedAiSubject.id,
         topic_id: selectedAiTopic.id,
         prompt: aiPrompt.trim(),
         status: 'pending',
       })
-      .select('id, subject_id, topic_id, prompt, solution, status, created_at, subjects(name), topics(name)')
+      .select('id, subject_id, topic_id, image_path, prompt, solution, status, created_at, subjects(name), topics(name)')
       .single();
 
     if (error || !question) {
@@ -392,6 +460,7 @@ export default function App() {
     setProfile((current) => (current ? { ...current, gemBalance: nextGemBalance } : current));
     setAiQuestions((current) => [nextQuestion, ...current]);
     setAiPrompt('');
+    setAiImage(null);
     setAiSyncMessage('AI isteği kaydedildi. Çözüm üretiliyor...');
 
     const { data: solvedQuestion, error: solveError } = await supabase.functions.invoke('solve-question', {
@@ -502,6 +571,7 @@ export default function App() {
     setStudyLogs([]);
     setMockExams([]);
     setAiQuestions([]);
+    setAiImage(null);
     setStudySyncMessage('');
     setExamSyncMessage('');
     setAiSyncMessage('');
@@ -574,12 +644,16 @@ export default function App() {
               selectedSubjectId={aiSubjectId}
               selectedTopicId={aiTopicId}
               prompt={aiPrompt}
+              selectedImageUri={aiImage?.uri ?? null}
               gemBalance={profile.gemBalance}
               aiQuestions={aiQuestions}
               syncMessage={aiSyncMessage}
               onSelectSubject={selectAiSubject}
               onSelectTopic={setAiTopicId}
               onChangePrompt={setAiPrompt}
+              onPickImage={pickAiImage}
+              onTakePhoto={takeAiPhoto}
+              onRemoveImage={() => setAiImage(null)}
               onSubmit={addAiQuestion}
             />
           )}
@@ -641,6 +715,12 @@ function profileFromUser(user: { id?: string; email?: string; user_metadata?: Re
   };
 }
 
+type PickedAiImage = {
+  uri: string;
+  fileName: string;
+  mimeType: string;
+};
+
 function profileFromProfileRow(
   row: {
     id: string;
@@ -687,6 +767,24 @@ function buildCalendarDays(logs: StudyLog[], target: number): CalendarDay[] {
       reachedGoal: solved >= target,
     };
   });
+}
+
+function toPickedAiImage(asset: ImagePicker.ImagePickerAsset): PickedAiImage {
+  const mimeType = asset.mimeType ?? 'image/jpeg';
+  const extension = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+  const fileName = asset.fileName ?? `question.${extension}`;
+
+  return {
+    uri: asset.uri,
+    fileName: sanitizeFileName(fileName, extension),
+    mimeType,
+  };
+}
+
+function sanitizeFileName(fileName: string, fallbackExtension: string) {
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '-');
+  if (safeName.includes('.')) return safeName;
+  return `${safeName}.${fallbackExtension}`;
 }
 
 function parseDepartment(value: unknown): Department {
@@ -749,6 +847,7 @@ function mapAiQuestionRow(row: {
   id: number;
   subject_id: number | null;
   topic_id: number | null;
+  image_path: string | null;
   prompt: string | null;
   solution: string | null;
   status: string;
@@ -766,6 +865,7 @@ function mapAiQuestionRow(row: {
     subject: prettifySubjectName(subject?.name ?? 'Ders'),
     topic: prettifyTopicName(topic?.name ?? 'Konu'),
     prompt: row.prompt ?? '',
+    imagePath: row.image_path,
     solution: row.solution,
     status: parseAiStatus(row.status),
     createdAt: row.created_at.slice(0, 10),

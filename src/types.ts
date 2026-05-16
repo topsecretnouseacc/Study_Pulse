@@ -39,6 +39,7 @@ export type AiQuestion = {
   subject: string;
   topic: string;
   prompt: string;
+  imagePath: string | null;
   solution: string | null;
   status: 'pending' | 'solved' | 'failed';
   createdAt: string;

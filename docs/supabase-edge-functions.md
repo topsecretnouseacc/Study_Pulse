@@ -36,10 +36,11 @@ npx supabase secrets set OPENAI_MODEL=gpt-4.1-mini
 npx supabase functions deploy solve-question
 ```
 
-## 5. Database Policies
+## 5. Database Policies and Storage
 
 Run this in Supabase SQL Editor if not already applied:
 
 ```text
 docs/supabase-ai-flow.sql
+docs/supabase-ai-storage.sql
 ```
